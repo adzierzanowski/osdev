@@ -22,7 +22,7 @@ start:
   xor bx, bx
 
   mov ah, 2
-  mov al, 3 ; 3 * 512 B
+  mov al, 19 ; * 512 B
   xor ch, ch
   mov cl, 2 ; sector 2 (this is boot sector, the next is stage 2)
   xor dh, dh
