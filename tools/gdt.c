@@ -86,6 +86,8 @@ int main(int argc, char *argv[]) {
   if (verbose) QC printf("%24s  %s", "", "meaning depends on segment type\n"); QE
   printf("%24s: %s\n", "accessed", strbool(gdt.rw));
   if (verbose) QC printf("%24s  %s", "", "hardware sets this bit on access, cleared by software\n"); QE
+  printf("%24s: %d\n", "const 1", gdt.one);
+  if (verbose) QC printf("%24s  %s", "", "always 1"); QE
 
   return 0;
 }

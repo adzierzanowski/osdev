@@ -3,7 +3,9 @@
 
 ; 1 MB = 0x100_000
 ; addr = segment * 0x10 + offset
-;jmp word 0x0000:start
+
+jmp start
+nop
 
 start:
   ; load stage2 into 0x2000

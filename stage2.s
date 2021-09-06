@@ -68,6 +68,13 @@ start32:
   lea eax, [0xb8000]
   mov dword [eax], 0x41414141
 
+  mov ecx, 4000 ; 80x25 -> 80 * 2 * 25
+  xor edi, edi
+wr_vga:
+  mov dword [eax + edi], 0x13411341
+  add edi, 4
+  loop wr_vga
+
 jmp $
 
 GDT_addr:
