@@ -45,6 +45,7 @@ void write_mbr(const char* fname, int partition, uint8_t *entry) {
 
   memcpy(buf+0x01be + 16*partition, entry, 16);
 
+  /*
   for (int i  = 0; i < 512; i++) {
     if (i != 0 && i % 16 == 0)  {
       puts("");
@@ -52,6 +53,7 @@ void write_mbr(const char* fname, int partition, uint8_t *entry) {
     printf("%02x ", buf[i]);
   }
   puts("");
+  */
 
   fseek(f, 0, SEEK_SET);
   fwrite(buf, 1, 512, f);

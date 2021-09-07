@@ -7,6 +7,7 @@ with open(sys.argv[1], 'rb+') as f:
   data = f.read()
 
   datalen = len(data)
+  print('Original file size remainder', datalen % 512, sys.argv[1])
   if datalen % 512:
     data += b'\0' * (512 - (datalen % 512))
 

@@ -98,7 +98,7 @@ print_msg2:
   loop print_msg2
 
   ; little delay
-  mov ecx, 0x50000000
+  mov ecx, 0x500000
   loop $
   mov byte [eax+160], 'X'
 
@@ -123,11 +123,20 @@ goto64:
   or eax, 1 << 31
   mov cr0, eax
 
-  lgdt [GDT_addr + 0x20000]
+  lgdt [GDT64_addr + 0x20000]
   jmp dword 0x8:(0x20000 + start64)
 
 start64:
   [bits 64]
+  mov ax, 0x10
+  mov es, ax
+  mov ss, ax
+  mov ds, ax
+
+  mov r8, 0x41
+  cmp rax, r8
+  je $
+
   mov rax, 0xb8000
   xor rdi, rdi
 
@@ -137,6 +146,54 @@ gfx64:
   mov byte [rax+rdi], 0x41
   inc edi
   loop gfx64
+
+  ; ELF loader
+  ;0x20 	4 	8 	e_phoff
+  ; Points to the start of the program header table.
+  ; It usually follows the file header immediately, making the offset 0x34
+  ; or 0x40 for 32- and 64-bit ELF executables, respectively.
+load_elf64:
+  mov rsi, [0x20000 + kernel + 0x20] ; load offset
+  add rsi, 0x20000 + kernel  ; add kernel position to offset
+
+  ; 0x38 e_phnum (number of entries in the header table)
+  movzx ecx, word [0x20000 + kernel + 0x38]
+  cld ; clear direction flag (for movsb)
+.ph_loop:
+  mov eax, [rsi + 0]
+  cmp eax, 1 ; is it loadable segment? (PT_LOAD)
+  jne .next
+
+; 0x20147
+  mov r8, [rsi + 0x8] ; p_offset offset of the segment
+  mov r9, [rsi + 0x10] ; p_vaddr
+  mov r10, [rsi + 0x20] ; p_filesz
+
+  ; could be push, but registers are faster
+  mov rbp, rsi
+  mov r15, rcx
+
+  ; load segment to vaddr
+  lea rsi, [0x20000 + kernel + r8d]
+  mov rdi, r9
+  mov rcx, r10
+  rep movsb
+
+  mov rcx, r15
+  mov rsi, rbp
+
+.next:
+  add rsi, 0x38 ; next header
+  loop .ph_loop
+
+; Indicate success by writing "64" to the GPU text buffer
+  mov rax, 0xb8000
+  mov byte [rax], 0x36
+  mov byte [rax+1], 0xf
+  mov byte [rax+2], 0x34
+  mov byte [rax+3], 0xf
+  mov byte [rax+4], 0
+  mov byte [rax+5], 0xf
 
 jmp $
 
@@ -162,7 +219,12 @@ GDT:
   dd 0, 0
 GDT_end:
 
+
 ; 64-bit Global Descriptor Table
+GDT64_addr:
+  dw (GDT64_end - GDT64) - 1
+  dd 0x20000 + GDT64
+
 align 32
 GDT64:
   ; 1st segment must be null
@@ -184,12 +246,21 @@ align 1024*4
 ; IA-32e Paging
 PML4:
   ; Exists  R/W
-  dq    1 | (1 << 1) | (PDPTE - $$ + 0x20000)
+  dq    1 | (1 << 1) | (PDPT - $$ + 0x20000)
   times 511 dq 0
 
-PDPTE:
-  dq 1 | (1 << 1) | (1 << 7)
+; Level 3 table
+PDPT:
+  dq 1 | (1 << 1) | (PDT - $$ + 0x20000)
+  times 511 dq 0
 
+; Level 2 table
+PDT:
+%assign i 0
+%rep 512
+  dq 0x200000*i+0x83
+%assign i i+1
+%endrep
 
 msg1:
   db 'Press any key to jump into 32-bit mode'
@@ -198,3 +269,6 @@ msg1_end:
 msg2:
   db 'Welcome to 32-bit mode'
 msg2_end:
+
+align 512
+kernel:
