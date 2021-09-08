@@ -98,8 +98,11 @@ print_msg2:
   loop print_msg2
 
   ; little delay
-  mov ecx, 0x500000
+  mov ecx, 0x5000000
   loop $
+
+  ; as for now, I don't know how to fetch keypress in the 32-bit mode
+  ; so just print X and go immediately to 64-bit mode
   mov byte [eax+160], 'X'
 
 goto64:
@@ -186,7 +189,7 @@ load_elf64:
   add rsi, 0x38 ; next header
   loop .ph_loop
 
-; Indicate success by writing "64" to the GPU text buffer
+  ; Indicate success by writing "64" to the GPU text buffer
   mov rax, 0xb8000
   mov byte [rax], 0x36
   mov byte [rax+1], 0xf
